@@ -1090,7 +1090,19 @@ defmodule Req do
   @spec request(request :: Req.Request.t() | keyword(), options :: keyword()) ::
           {:ok, Req.Response.t()} | {:error, Exception.t()}
   def request(request, options \\ []) do
+    connect_options = Keyword.get(options, :connect_options, [])
+    conn_opts = if proxy = http_proxy(), do: [proxy: proxy] ++ connect_options, else: connect_options
+    options = Keyword.put(options, :connect_options, conn_opts)
     Req.Request.run(new(request, options))
+  end
+
+  defp http_proxy() do
+    if http_env = System.get_env("HTTP_PROXY") || System.get_env("http_proxy") || System.get_env("https_proxy") || System.get_env("https_proxy") do
+      %{host: host, port: port} = URI.parse(http_env)
+      {:http, host, port, []}
+    else
+      nil
+    end
   end
 
   @doc """
